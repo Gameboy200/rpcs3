@@ -838,7 +838,7 @@ namespace rpcn
 				rpcn_log.trace(
 					"RX plaintext (%d bytes)",
 					res);
-				rpcn_log.trace(fmt::buf_to_hexstring(
+				rpcn_log.trace("RECVN (Incoming) Hex dump: %s", fmt::buf_to_hexstring(
 					buf + n_recv,
 					res));
 				// Reset timeout each time something is received
@@ -858,7 +858,7 @@ namespace rpcn
 		rpcn_log.trace(
 			"TX plaintext (%zu bytes)",
 			packet.size());
-		rpcn_log.trace(fmt::buf_to_hexstring(
+		rpcn_log.trace("Send_packet (Outgoing) Hex dump: %s", fmt::buf_to_hexstring(
 			packet.data(),
 			packet.size()));
 
