@@ -1020,6 +1020,12 @@ namespace rpcn
 
 			wolfSSL_CTX_set_verify(wssl_ctx, SSL_VERIFY_NONE, nullptr);
 
+			#ifndef NO_WOLFSSL_CLIENT
+				wolfSSL_CTX_set_keylog_callback(wssl_ctx, [](const WOLFSSL* ssl, const char* line) {
+					rpcn_log.notice("TLS Key Log: %s", line);
+				});
+			#endif
+
 			if ((read_wssl = wolfSSL_new(wssl_ctx)) == nullptr)
 			{
 				rpcn_log.error("connect: Failed to create wolfssl object");
