@@ -1153,7 +1153,7 @@ namespace rpcn
 				if (session)
 				{
 					// Get master secret
-					const unsigned char* master_secret = wolfSSL_SESSION_get_master_secret(session);
+					const unsigned char* master_secret = wolfSSL_SESSION_get_master_key(session);
 					if (master_secret)
 					{
 						rpcn_log.notice("TLS Master Secret:\n%s", fmt::buf_to_hexstring(master_secret, 48));
