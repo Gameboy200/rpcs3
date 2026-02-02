@@ -1020,11 +1020,6 @@ namespace rpcn
 
 			wolfSSL_CTX_set_verify(wssl_ctx, SSL_VERIFY_NONE, nullptr);
 
-			#ifndef NO_WOLFSSL_CLIENT
-				wolfSSL_CTX_set_keylog_callback(wssl_ctx, [](const WOLFSSL* ssl, const char* line) {
-					rpcn_log.notice("TLS Key Log: %s", line);
-				});
-			#endif
 
 			if ((read_wssl = wolfSSL_new(wssl_ctx)) == nullptr)
 			{
@@ -1152,6 +1147,34 @@ namespace rpcn
 			}
 
 			rpcn_log.notice("connect: Handshake successful");
+
+			{
+				WOLFSSL_SESSION* session = wolfSSL_get_session(read_wssl);
+				if (session)
+				{
+					// Get master secret
+					const unsigned char* master_secret = wolfSSL_SESSION_get_master_secret(session);
+					if (master_secret)
+					{
+						rpcn_log.notice("TLS Master Secret:\n%s", fmt::buf_to_hexstring(master_secret, 48));
+					}
+
+					// Get session ID
+					unsigned int id_len = 0;
+					const unsigned char* session_id = wolfSSL_SESSION_get_id(session, &id_len);
+					if (session_id && id_len > 0)
+					{
+						rpcn_log.notice("TLS Session ID:\n%s", fmt::buf_to_hexstring(session_id, id_len));
+					}
+				}
+
+				// Get cipher info
+				const char* cipher = wolfSSL_get_cipher(read_wssl);
+				if (cipher)
+				{
+					rpcn_log.notice("TLS Cipher: %s", cipher);
+				}
+			}
 
 			if ((write_wssl = wolfSSL_write_dup(read_wssl)) == NULL)
 			{
