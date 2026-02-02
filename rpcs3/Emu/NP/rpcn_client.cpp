@@ -835,6 +835,12 @@ namespace rpcn
 			}
 			else
 			{
+				rpcn_log.trace(
+					"RX plaintext (%d bytes)",
+					res);
+				rpcn_log.trace_hex(
+					buf + n_recv,
+					res);
 				// Reset timeout each time something is received
 				num_timeouts = 0;
 				n_recv += res;
@@ -848,6 +854,14 @@ namespace rpcn
 	{
 		u32 num_timeouts = 0;
 		usz n_sent = 0;
+
+		rpcn_log.trace(
+			"TX plaintext (%zu bytes)",
+			packet.size());
+		rpcn_log.trace_hex(
+			packet.data(),
+			packet.size());
+
 		while (n_sent != packet.size())
 		{
 			if (terminate)
