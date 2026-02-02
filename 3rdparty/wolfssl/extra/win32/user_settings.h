@@ -53,6 +53,8 @@
 #define FP_MAX_BITS 8192
 #ifndef WOLFSSL_ALT_CERT_CHAINS
 #define WOLFSSL_ALT_CERT_CHAINS
+#define SHOW_SECRETS
+#define HAVE_SECRET_CALLBACK
 #endif
 
 /* UTF-8 aware filesystem functions for Windows */
