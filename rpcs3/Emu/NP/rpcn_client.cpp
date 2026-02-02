@@ -858,7 +858,7 @@ namespace rpcn
 		rpcn_log.trace(
 			"TX plaintext (%zu bytes)",
 			packet.size());
-		rpcn_log..trace(fmt::buf_to_hexstring(
+		rpcn_log.trace(fmt::buf_to_hexstring(
 			packet.data(),
 			packet.size()));
 
