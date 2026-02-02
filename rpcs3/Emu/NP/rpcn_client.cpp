@@ -838,9 +838,9 @@ namespace rpcn
 				rpcn_log.trace(
 					"RX plaintext (%d bytes)",
 					res);
-				rpcn_log.trace_hex(
+				rpcn_log.trace(fmt::buf_to_hexstring(
 					buf + n_recv,
-					res);
+					res));
 				// Reset timeout each time something is received
 				num_timeouts = 0;
 				n_recv += res;
@@ -858,9 +858,9 @@ namespace rpcn
 		rpcn_log.trace(
 			"TX plaintext (%zu bytes)",
 			packet.size());
-		rpcn_log.trace_hex(
+		rpcn_log..trace(fmt::buf_to_hexstring(
 			packet.data(),
-			packet.size());
+			packet.size()));
 
 		while (n_sent != packet.size())
 		{
