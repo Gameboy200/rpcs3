@@ -1149,22 +1149,24 @@ namespace rpcn
 			rpcn_log.notice("connect: Handshake successful");
 
 			{
-				WOLFSSL_SESSION* session = wolfSSL_get_session(read_wssl);
-				if (session)
-				{
-					// Get master secret
-					const unsigned char* master_secret = wolfSSL_SESSION_get_master_key(session);
-					if (master_secret)
-					{
-						rpcn_log.notice("TLS Master Secret:\n%s", fmt::buf_to_hexstring(master_secret, 48));
-					}
+				unsigned char* ms = nullptr; // master secret
+				unsigned char* sr = nullptr; // server random
+				unsigned char* cr = nullptr; // client random
+				unsigned int msLen = 0, srLen = 0, crLen = 0;
 
-					// Get session ID
-					unsigned int id_len = 0;
-					const unsigned char* session_id = wolfSSL_SESSION_get_id(session, &id_len);
-					if (session_id && id_len > 0)
+				if (wolfSSL_get_keys(read_wssl, &ms, &msLen, &sr, &srLen, &cr, &crLen) == WOLFSSL_SUCCESS)
+				{
+					if (ms && msLen > 0)
 					{
-						rpcn_log.notice("TLS Session ID:\n%s", fmt::buf_to_hexstring(session_id, id_len));
+						rpcn_log.notice("Master Secret (%u bytes):\n%s", msLen, fmt::buf_to_hexstring(ms, msLen));
+					}
+					if (cr && crLen > 0)
+					{
+						rpcn_log.notice("Client Random (%u bytes):\n%s", crLen, fmt::buf_to_hexstring(cr, crLen));
+					}
+					if (sr && srLen > 0)
+					{
+						rpcn_log.notice("Server Random (%u bytes):\n%s", srLen, fmt::buf_to_hexstring(sr, srLen));
 					}
 				}
 
@@ -1172,7 +1174,7 @@ namespace rpcn
 				const char* cipher = wolfSSL_get_cipher(read_wssl);
 				if (cipher)
 				{
-					rpcn_log.notice("TLS Cipher: %s", cipher);
+					rpcn_log.notice("TLS Cipher Suite: %s", cipher);
 				}
 			}
 
