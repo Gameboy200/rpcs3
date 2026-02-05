@@ -1019,8 +1019,6 @@ namespace rpcn
 			}
 
 			wolfSSL_CTX_set_verify(wssl_ctx, SSL_VERIFY_NONE, nullptr);
-			wolfSSL_KeepArrays()
-
 
 			if ((read_wssl = wolfSSL_new(wssl_ctx)) == nullptr)
 			{
