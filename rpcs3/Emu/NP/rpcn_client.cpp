@@ -1029,6 +1029,10 @@ namespace rpcn
 			}
 
 			wolfSSL_set_using_nonblock(read_wssl, 1);
+			if (wolfSSL_KeepArrays(read_wssl) != WOLFSSL_SUCCESS)
+			{
+				rpcn_log.warning("connect: Failed to enable wolfssl key retention");
+			}
 
 			memset(&addr_rpcn, 0, sizeof(addr_rpcn));
 
@@ -1190,6 +1194,8 @@ namespace rpcn
 				{
 					rpcn_log.error("wolfSSL_get_keys() failed");
 				}
+
+				wolfSSL_FreeArrays(read_wssl);
 
 				// Get cipher info
 				const char* cipher = wolfSSL_get_cipher(read_wssl);
