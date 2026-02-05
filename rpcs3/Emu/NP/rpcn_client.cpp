@@ -1158,16 +1158,37 @@ namespace rpcn
 				{
 					if (ms && msLen > 0)
 					{
-						rpcn_log.notice("Master Secret (%u bytes):\n%s", msLen, fmt::buf_to_hexstring(ms, msLen));
+						rpcn_log.notice("Master Secret (%u bytes):\n%s",
+							msLen, fmt::buf_to_hexstring(ms, msLen));
 					}
+					else
+					{
+						rpcn_log.warning("Master Secret not available");
+					}
+
 					if (cr && crLen > 0)
 					{
-						rpcn_log.notice("Client Random (%u bytes):\n%s", crLen, fmt::buf_to_hexstring(cr, crLen));
+						rpcn_log.notice("Client Random (%u bytes):\n%s",
+							crLen, fmt::buf_to_hexstring(cr, crLen));
 					}
+					else
+					{
+						rpcn_log.warning("Client Random not available");
+					}
+
 					if (sr && srLen > 0)
 					{
-						rpcn_log.notice("Server Random (%u bytes):\n%s", srLen, fmt::buf_to_hexstring(sr, srLen));
+						rpcn_log.notice("Server Random (%u bytes):\n%s",
+							srLen, fmt::buf_to_hexstring(sr, srLen));
 					}
+					else
+					{
+						rpcn_log.warning("Server Random not available");
+					}
+				}
+				else
+				{
+					rpcn_log.error("wolfSSL_get_keys() failed");
 				}
 
 				// Get cipher info
