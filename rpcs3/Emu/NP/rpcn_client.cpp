@@ -1029,10 +1029,6 @@ namespace rpcn
 			}
 
 			wolfSSL_set_using_nonblock(read_wssl, 1);
-			if (wolfSSL_KeepArrays(read_wssl) != WOLFSSL_SUCCESS)
-			{
-				rpcn_log.warning("connect: Failed to enable wolfssl key retention");
-			}
 
 			memset(&addr_rpcn, 0, sizeof(addr_rpcn));
 
