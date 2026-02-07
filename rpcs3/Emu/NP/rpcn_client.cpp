@@ -206,7 +206,7 @@ void vec_stream::dump() const
 	rpcn_log.error("vec_stream dump:\n%s", fmt::buf_to_hexstring(vec.data(), vec.size()));
 }
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__clang__)
 namespace
 {
 	void rpcn_keylog_cb(const WOLFSSL*, const char* line)
@@ -1040,7 +1040,7 @@ namespace rpcn
 				return false;
 			}
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(__clang__)
 			wolfSSL_CTX_set_keylog_callback(wssl_ctx, rpcn_keylog_cb);
 #endif
 			wolfSSL_CTX_set_verify(wssl_ctx, SSL_VERIFY_NONE, nullptr);
@@ -1172,7 +1172,7 @@ namespace rpcn
 
 			rpcn_log.notice("connect: Handshake successful");
 
-#ifndef _WIN32
+#if !defined(_WIN32) || defined(__clang__)
 			{
 				unsigned char* ms = nullptr; // master secret
 				unsigned char* sr = nullptr; // server random
