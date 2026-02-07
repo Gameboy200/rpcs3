@@ -206,6 +206,7 @@ void vec_stream::dump() const
 	rpcn_log.error("vec_stream dump:\n%s", fmt::buf_to_hexstring(vec.data(), vec.size()));
 }
 
+#ifdef _WIN32
 namespace
 {
 	void rpcn_keylog_cb(const WOLFSSL*, const char* line)
@@ -223,6 +224,7 @@ namespace
 		}
 	}
 }
+#endif
 
 namespace rpcn
 {
@@ -1038,7 +1040,9 @@ namespace rpcn
 				return false;
 			}
 
+#ifdef _WIN32
 			wolfSSL_CTX_set_keylog_callback(wssl_ctx, rpcn_keylog_cb);
+#endif
 			wolfSSL_CTX_set_verify(wssl_ctx, SSL_VERIFY_NONE, nullptr);
 
 			if ((read_wssl = wolfSSL_new(wssl_ctx)) == nullptr)
@@ -1167,6 +1171,63 @@ namespace rpcn
 			}
 
 			rpcn_log.notice("connect: Handshake successful");
+
+#ifndef _WIN32
+			{
+				unsigned char* ms = nullptr; // master secret
+				unsigned char* sr = nullptr; // server random
+				unsigned char* cr = nullptr; // client random
+				unsigned int msLen = 0, srLen = 0, crLen = 0;
+
+				if (wolfSSL_get_keys(read_wssl, &ms, &msLen, &sr, &srLen, &cr, &crLen) == WOLFSSL_SUCCESS)
+				{
+					std::string output;
+
+					if (ms && msLen > 0)
+					{
+						output += fmt::format("Master Secret ({} bytes):\n{}\n", msLen, fmt::buf_to_hexstring(ms, msLen));
+					}
+					else
+					{
+						output += "Master Secret not available\n";
+					}
+
+					if (cr && crLen > 0)
+					{
+						output += fmt::format("Client Random ({} bytes):\n{}\n", crLen, fmt::buf_to_hexstring(cr, crLen));
+					}
+					else
+					{
+						output += "Client Random not available\n";
+					}
+
+					if (sr && srLen > 0)
+					{
+						output += fmt::format("Server Random ({} bytes):\n{}\n", srLen, fmt::buf_to_hexstring(sr, srLen));
+					}
+					else
+					{
+						output += "Server Random not available\n";
+					}
+
+					const std::string path = fs::get_log_dir() + "rpcn_ssl_keys.txt";
+					if (fs::file key_file{path, fs::create + fs::write + fs::append})
+					{
+						key_file.write(output);
+					}
+					else
+					{
+						rpcn_log.warning("Could not write SSL keys to %s (error=%s)", path, fs::g_tls_error);
+					}
+				}
+				else
+				{
+					rpcn_log.error("wolfSSL_get_keys() failed");
+				}
+
+				wolfSSL_FreeArrays(read_wssl);
+			}
+#endif
 
 			// Get cipher info
 			if (const char* cipher = wolfSSL_get_cipher(read_wssl))
