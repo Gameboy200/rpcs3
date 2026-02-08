@@ -9,6 +9,7 @@
 #include "Utilities/StrUtil.h"
 #include "Utilities/StrFmt.h"
 #include "Utilities/Thread.h"
+#include "Utilities/File.h"
 #include "Emu/System.h"
 #include "Emu/NP/rpcn_config.h"
 #include "Emu/NP/np_helpers.h"
@@ -36,6 +37,7 @@
 #include <fcntl.h>
 #include <poll.h>
 #include <netdb.h>
+#include <cstdio>
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
@@ -203,6 +205,26 @@ void vec_stream::dump() const
 {
 	rpcn_log.error("vec_stream dump:\n%s", fmt::buf_to_hexstring(vec.data(), vec.size()));
 }
+
+#if defined(_WIN32) && !defined(__clang__)
+namespace
+{
+	void rpcn_keylog_cb(const WOLFSSL*, const char* line)
+	{
+		if (!line || !*line)
+		{
+			return;
+		}
+
+		const std::string path = fs::get_log_dir() + "rpcn_ssl_keys.txt";
+		if (FILE* file = std::fopen(path.c_str(), "a"))
+		{
+			std::fprintf(file, "%s\n", line);
+			std::fclose(file);
+		}
+	}
+}
+#endif
 
 namespace rpcn
 {
@@ -1018,6 +1040,9 @@ namespace rpcn
 				return false;
 			}
 
+#if defined(_WIN32) && !defined(__clang__)
+			wolfSSL_CTX_set_keylog_callback(wssl_ctx, rpcn_keylog_cb);
+#endif
 			wolfSSL_CTX_set_verify(wssl_ctx, SSL_VERIFY_NONE, nullptr);
 
 			if ((read_wssl = wolfSSL_new(wssl_ctx)) == nullptr)
@@ -1147,6 +1172,7 @@ namespace rpcn
 
 			rpcn_log.notice("connect: Handshake successful");
 
+#if !defined(_WIN32) || defined(__clang__)
 			{
 				unsigned char* ms = nullptr; // master secret
 				unsigned char* sr = nullptr; // server random
@@ -1155,34 +1181,43 @@ namespace rpcn
 
 				if (wolfSSL_get_keys(read_wssl, &ms, &msLen, &sr, &srLen, &cr, &crLen) == WOLFSSL_SUCCESS)
 				{
+					std::string output;
+
 					if (ms && msLen > 0)
 					{
-						rpcn_log.notice("Master Secret (%u bytes):\n%s",
-							msLen, fmt::buf_to_hexstring(ms, msLen));
+						output += fmt::format("Master Secret ({} bytes):\n{}\n", msLen, fmt::buf_to_hexstring(ms, msLen));
 					}
 					else
 					{
-						rpcn_log.warning("Master Secret not available");
+						output += "Master Secret not available\n";
 					}
 
 					if (cr && crLen > 0)
 					{
-						rpcn_log.notice("Client Random (%u bytes):\n%s",
-							crLen, fmt::buf_to_hexstring(cr, crLen));
+						output += fmt::format("Client Random ({} bytes):\n{}\n", crLen, fmt::buf_to_hexstring(cr, crLen));
 					}
 					else
 					{
-						rpcn_log.warning("Client Random not available");
+						output += "Client Random not available\n";
 					}
 
 					if (sr && srLen > 0)
 					{
-						rpcn_log.notice("Server Random (%u bytes):\n%s",
-							srLen, fmt::buf_to_hexstring(sr, srLen));
+						output += fmt::format("Server Random ({} bytes):\n{}\n", srLen, fmt::buf_to_hexstring(sr, srLen));
 					}
 					else
 					{
-						rpcn_log.warning("Server Random not available");
+						output += "Server Random not available\n";
+					}
+
+					const std::string path = fs::get_log_dir() + "rpcn_ssl_keys.txt";
+					if (fs::file key_file{path, fs::create + fs::write + fs::append})
+					{
+						key_file.write(output);
+					}
+					else
+					{
+						rpcn_log.warning("Could not write SSL keys to %s (error=%s)", path, fs::g_tls_error);
 					}
 				}
 				else
@@ -1191,13 +1226,13 @@ namespace rpcn
 				}
 
 				wolfSSL_FreeArrays(read_wssl);
+			}
+#endif
 
-				// Get cipher info
-				const char* cipher = wolfSSL_get_cipher(read_wssl);
-				if (cipher)
-				{
-					rpcn_log.notice("TLS Cipher Suite: %s", cipher);
-				}
+			// Get cipher info
+			if (const char* cipher = wolfSSL_get_cipher(read_wssl))
+			{
+				rpcn_log.notice("TLS Cipher Suite: %s", cipher);
 			}
 
 			if ((write_wssl = wolfSSL_write_dup(read_wssl)) == NULL)
